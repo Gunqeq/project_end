@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการ FAQ - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar (เหมือน dashboard.html) -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-flask"></i> Science Admin</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="nav-item">
+                <i class="fas fa-users"></i> ผู้ใช้งาน
+            </a>
+            <a href="{{ url_for('admin_faqs') }}" class="nav-item active">
+                <i class="fas fa-question-circle"></i> จัดการ FAQ
+            </a>
+            <a href="{{ url_for('admin_documents') }}" class="nav-item">
+                <i class="fas fa-file-pdf"></i> เอกสาร
+            </a>
+            <a href="{{ url_for('home') }}" class="nav-item">
+                <i class="fas fa-home"></i> กลับหน้าหลัก
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-item logout">
+                <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="content-header">
+            <h1>❓ จัดการ FAQ</h1>
+            <button class="btn-primary" onclick="document.getElementById('addModal').style.display='flex'">
+                <i class="fas fa-plus"></i> เพิ่ม FAQ
+            </button>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- FAQ Table -->
+        <div class="table-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>หมวดหมู่</th>
+                        <th>คำถาม</th>
+                        <th>คำตอบ</th>
+                        <th>Keywords</th>
+                        <th>สถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for faq in faqs %}
+                    <tr>
+                        <td>{{ faq.id }}</td>
+                        <td><span class="badge">{{ faq.category }}</span></td>
+                        <td>{{ faq.question[:50] }}...</td>
+                        <td>{{ faq.answer[:50] }}...</td>
+                        <td>
+                            {% set keywords = faq.keywords|from_json %}
+                            {% for kw in keywords[:3] %}
+                                <span class="tag">{{ kw }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if faq.is_active %}
+                                <span class="status-active">ใช้งาน</span>
+                            {% else %}
+                                <span class="status-inactive">ปิด</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-delete"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Add FAQ Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>เพิ่ม FAQ ใหม่</h2>
+                <span class="close" onclick="document.getElementById('addModal').style.display='none'">&times;</span>
+            </div>
+            <form method="POST" action="{{ url_for('add_faq') }}">
+                <div class="form-group">
+                    <label>หมวดหมู่</label>
+                    <select name="category" required>
+                        <option value="general">ทั่วไป</option>
+                        <option value="admission">การรับสมัคร</option>
+                        <option value="academic">วิชาการ</option>
+                        <option value="facility">สิ่งอำนวยความสะดวก</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>คำถาม</label>
+                    <input type="text" name="question" placeholder="พิมพ์คำถาม" required>
+                </div>
+                <div class="form-group">
+                    <label>คำตอบ</label>
+                    <textarea name="answer" rows="4" placeholder="พิมพ์คำตอบ" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Keywords (คั่นด้วยเครื่องหมาย comma)</label>
+                    <input type="text" name="keywords" placeholder="เช่น: รับสมัคร, admission, ลงทะเบียน" required>
+                </div>
+                <button type="submit" class="btn-submit">บันทึก</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .close:hover {
+            color: #ef4444;
+        }
+
+        /* Table Styles */
+        .table-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .badge {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .tag {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #94a3b8;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .btn-edit {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+    </style>
+</body>
+</html> 

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการผู้ใช้ - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-flask"></i> Science Admin</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="nav-item active">
+                <i class="fas fa-users"></i> ผู้ใช้งาน
+            </a>
+            <a href="{{ url_for('admin_faqs') }}" class="nav-item">
+                <i class="fas fa-question-circle"></i> จัดการ FAQ
+            </a>
+            <a href="{{ url_for('admin_documents') }}" class="nav-item">
+                <i class="fas fa-file-pdf"></i> เอกสาร
+            </a>
+            <a href="{{ url_for('home') }}" class="nav-item">
+                <i class="fas fa-home"></i> กลับหน้าหลัก
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-item logout">
+                <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="content-header">
+            <h1>👥 จัดการผู้ใช้งาน</h1>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchUser" placeholder="ค้นหาผู้ใช้...">
+            </div>
+        </header>
+
+        <!-- Statistics Cards -->
+        <div class="stats-mini-grid">
+            <div class="stat-mini blue">
+                <i class="fas fa-users"></i>
+                <div>
+                    <h3>{{ users|length }}</h3>
+                    <p>ผู้ใช้ทั้งหมด</p>
+                </div>
+            </div>
+            <div class="stat-mini green">
+                <i class="fas fa-user-shield"></i>
+                <div>
+                    <h3>{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h3>
+                    <p>Admin</p>
+                </div>
+            </div>
+            <div class="stat-mini orange">
+                <i class="fas fa-user"></i>
+                <div>
+                    <h3>{{ users|selectattr('role', 'equalto', 'user')|list|length }}</h3>
+                    <p>ผู้ใช้ทั่วไป</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ชื่อผู้ใช้</th>
+                        <th>อีเมล</th>
+                        <th>บทบาท</th>
+                        <th>วันที่สมัคร</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ user.username[0].upper() }}
+                                </div>
+                                <strong>{{ user.username }}</strong>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.role == 'admin' %}
+                                <span class="role-badge admin">
+                                    <i class="fas fa-shield-alt"></i> Admin
+                                </span>
+                            {% else %}
+                                <span class="role-badge user">
+                                    <i class="fas fa-user"></i> User
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <button class="btn-edit" title="แก้ไข">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if user.role != 'admin' %}
+                            <button class="btn-delete" title="ลบ">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <style>
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-box i {
+            color: #64748b;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .stats-mini-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-mini {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-mini i {
+            font-size: 2rem;
+        }
+
+        .stat-mini.blue i { color: #3b82f6; }
+        .stat-mini.green i { color: #22c55e; }
+        .stat-mini.orange i { color: #f59e0b; }
+
+        .stat-mini h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-mini p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .role-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .role-badge.admin {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .role-badge.user {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-edit {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-edit:hover,
+        .btn-delete:hover {
+            transform: scale(1.05);
+        }
+    </style>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchUser').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const tableRows = document.querySelectorAll('#userTableBody tr');
+            
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchValue) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>

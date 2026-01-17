@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก - Science Sriracha</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="auth-logo">
+                <h1>สมัครสมาชิก</h1>
+                <p>Science Sriracha AI Assistant</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('register') }}" class="auth-form">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i> ชื่อผู้ใช้
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="กรอกชื่อผู้ใช้"
+                        required
+                        minlength="3"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">
+                        <i class="fas fa-envelope"></i> อีเมล
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="example@email.com"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i> รหัสผ่าน
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="กรอกรหัสผ่าน (อย่างน้อย 6 ตัวอักษร)"
+                        required
+                        minlength="6"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">
+                        <i class="fas fa-lock"></i> ยืนยันรหัสผ่าน
+                    </label>
+                    <input 
+                        type="password" 
+                        id="confirm_password" 
+                        name="confirm_password" 
+                        placeholder="กรอกรหัสผ่านอีกครั้ง"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    สมัครสมาชิก
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>มีบัญชีอยู่แล้ว? <a href="{{ url_for('login') }}">เข้าสู่ระบบ</a></p>
+                <p><a href="{{ url_for('home') }}">← กลับหน้าแรก</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ตรวจสอบความตรงกันของรหัสผ่าน
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('รหัสผ่านไม่ตรงกัน กรุณาลองใหม่');
+            }
+        });
+    </script>
+</body>
+</html>

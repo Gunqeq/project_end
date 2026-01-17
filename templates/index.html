@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>มหาวิทยาลัย - หน้าหลัก</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        /* Header */
+        .top-bar {
+            background-color: #fff;
+            padding: 10px 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .top-bar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-ai-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .chat-ai-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
+            color: #1e3a8a;
+            margin-bottom: 3px;
+        }
+
+        .logo-text p {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #4c1d95;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #7c3aed;
+            color: white;
+        }
+
+        .btn-outline {
+            background-color: white;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Navigation */
+        nav {
+            background-color: #fff;
+            padding: 15px 50px;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-size: 15px;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #7c3aed;
+        }
+
+        /* Hero Slider */
+        .slider-container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 50px;
+            position: relative;
+        }
+
+        .slider {
+            position: relative;
+            height: 500px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 50px;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .slide-content {
+            flex: 1;
+            color: white;
+        }
+
+        .slide-content h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .slide-content p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .slide-image {
+            flex: 0 0 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide-image img {
+            width: 350px;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .slider-nav {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .slider-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .slider-dot.active {
+            background-color: white;
+            width: 30px;
+            border-radius: 6px;
+        }
+
+        .slider-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(255,255,255,0.3);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .slider-arrow:hover {
+            background-color: rgba(255,255,255,0.5);
+        }
+
+        .slider-arrow.prev {
+            left: 20px;
+        }
+
+        .slider-arrow.next {
+            right: 20px;
+        }
+
+        /* Sidebar Section */
+        .content-wrapper {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 50px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .sidebar-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .dean-card {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .dean-card img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 5px solid #7c3aed;
+        }
+
+        .dean-card h3 {
+            font-size: 20px;
+            color: #7c3aed;
+            margin-bottom: 5px;
+        }
+
+        .dean-card p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .contact-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .quick-link-item {
+            position: relative;
+            height: 120px;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .quick-link-item:hover {
+            transform: scale(1.05);
+        }
+
+        .quick-link-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .quick-link-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-links {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .slide {
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .slide-image {
+                flex: 0 0 auto;
+                margin-top: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .top-bar, nav, .slider-container, .content-wrapper {
+                padding: 15px 20px;
+            }
+
+            .slider {
+                height: 400px;
+            }
+
+            .slide-content h2 {
+                font-size: 24px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .quick-links {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-content">
+            <div class="logo-section">
+                    <img width="56" height="59" src="https://sci.src.ku.ac.th/wp-content/uploads/2024/02/Work-3-Sci-volume-1-5.png" class="brxe-image css-filter size-full" alt="" id="brxe-ducsew" loading="eager" decoding="async">                <div class="logo-text">
+                    <h1>คณะวิทยาศาสตร์</h1>
+                    <p>ศรีราชา</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary">📢 ข่าวประชาสัมพันธ์</button>
+                <button class="btn btn-secondary">📅 สมัครเรียน</button>
+                <button class="btn btn-outline">👤 อาจารย์และบุคลากร</button>
+                <button class="btn btn-outline">👤 ศิษย์เก่า</button>
+                <button class="btn btn-outline">👥 ผู้ปกครอง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="#">🏠 เกี่ยวกับเรา</a></li>
+                <li><a href="#">📚 หลักสูตร</a></li>
+                <li><a href="#">📝 บริการการศึกษา</a></li>
+                <li><a href="#">🔬 วิจัยและนวัตกรรม</a></li>
+                <li><a href="#">📖 บริการวิชาการ</a></li>
+                <li><a href="#">🎓 ระบบสารสนเทศ</a></li>
+                <li><a href="#">💼 ความร่วมมือ</a></li>
+                <li><a href="#">❓ Q&A</a></li>
+                <li><a href="#">📞 ติดต่อเรา</a></li>
+                <a href="/chat" class="chat-ai-btn">💬 Chat AI</a>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Slider -->
+    <div class="slider-container">
+        <div class="slider">
+            <div class="slide active">
+                <div class="slide-content">
+                    <h2>ยินดีต้อนรับสู่มหาวิทยาลัย เกษตรศาสตร์ ศรีราชา </h2>
+                    <p> คณะวิทยาศาสตร์ ศรีราชา</p>
+                    <p>🎓 ศูนย์กลางแห่งการเรียนรู้และพัฒนาความรู้</p>
+                    <p>🌟 พัฒนาบุคลากรที่มีคุณภาพสู่สังคม</p>
+                    <p>🔬 ส่งเสริมการวิจัยและนวัตกรรมเพื่อการพัฒนาที่ยั่งยืน</p>
+                </div>
+                <div class="slide-image">
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="nav-logo">
+                </div>
+            </div>
+            
+            <button class="slider-arrow prev" onclick="changeSlide(-1)">‹</button>
+            <button class="slider-arrow next" onclick="changeSlide(1)">›</button>
+            
+            <div class="slider-nav">
+                <span class="slider-dot active" onclick="currentSlide(0)"></span>
+                <span class="slider-dot" onclick="currentSlide(1)"></span>
+                <span class="slider-dot" onclick="currentSlide(2)"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content with Sidebar -->
+    <div class="content-wrapper">
+        <div class="main-content">
+            <!-- Main content can be added here -->
+        </div>
+        
+        <div class="sidebar">
+            <!-- Dean Card -->
+            <div class="sidebar-card dean-card">
+                <img src="data:image/svg+xml,%3Csvg width='150' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='75' cy='75' r='75' fill='%237c3aed'/%3E%3Ctext x='50%25' y='50%25' fill='white' font-size='20' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E" alt="Dean">
+                <h3>ผศ.ดร.ภ. พิจบุญ นำศิลา</h3>
+                <p>คณบดี<br>คณะวิทยาศาสตร์ ศรีราชา</p>
+                <button class="contact-btn">📧 สายตรงคณบดี</button>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="quick-links">
+                <div class="quick-link-item">
+                    <img src="data:image/svg+xml,%3Csvg width='200' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='120' fill='%2367e8f9'/%3E%3C/svg%3E" alt="อาจารย์">
+                    <div class="quick-link-overlay">อาจารย์ และบุคลากร</div>
+                </div>
+                <div class="quick-link-item">
+                    <img src="data:image/svg+xml,%3Csvg width='200' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='120' fill='%23fbbf24'/%3E%3C/svg%3E" alt="นิสิต">
+                    <div class="quick-link-overlay">นิสิต</div>
+                </div>
+                <div class="quick-link-item">
+                    <img src="data:image/svg+xml,%3Csvg width='200' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='120' fill='%23f472b6'/%3E%3C/svg%3E" alt="ศิษย์เก่า">
+                    <div class="quick-link-overlay">ศิษย์เก่า</div>
+                </div>
+                <div class="quick-link-item">
+                    <img src="data:image/svg+xml,%3Csvg width='200' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='120' fill='%2334d399'/%3E%3C/svg%3E" alt="ผู้ปกครอง">
+                    <div class="quick-link-overlay">ผู้ปกครอง</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSlideIndex = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.slider-dot');
+
+        function showSlide(n) {
+            if (n >= slides.length) currentSlideIndex = 0;
+            if (n < 0) currentSlideIndex = slides.length - 1;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+
+            slides[currentSlideIndex].classList.add('active');
+            dots[currentSlideIndex].classList.add('active');
+        }
+
+        function changeSlide(n) {
+            currentSlideIndex += n;
+            showSlide(currentSlideIndex);
+        }
+
+        function currentSlide(n) {
+            currentSlideIndex = n;
+            showSlide(currentSlideIndex);
+        }
+
+        // Auto slide
+        setInterval(() => {
+            currentSlideIndex++;
+            showSlide(currentSlideIndex);
+        }, 5000);
+    </script>
+</body>
+</html>
