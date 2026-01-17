@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat & Downloads - Science Sriracha</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+
+        /* Chat Section */
+        .chat-wrapper {
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bot-avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header-info h2 {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 80%;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .bot .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .user .message-avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .message-content {
+            background: white;
+            padding: 15px 18px;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 18px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .chat-input-wrapper {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .chat-input-form {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 25px;
+            border: 2px solid #e2e8f0;
+        }
+
+        #user-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 8px 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Downloads Section */
+        .downloads-wrapper {
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .downloads-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+        }
+
+        .downloads-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box {
+            margin: 15px 0 0;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .downloads-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .category-section {
+            margin-bottom: 25px;
+        }
+
+        .category-title {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pdf-item {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .pdf-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .pdf-icon {
+            width: 40px;
+            height: 40px;
+            background: #fee2e2;
+            color: #ef4444;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .pdf-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pdf-name {
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pdf-meta {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .download-icon {
+            color: #3b82f6;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .pdf-item:hover .download-icon {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+
+            .downloads-wrapper {
+                max-height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+
+            .container {
+                height: 100vh;
+                gap: 0;
+            }
+
+            .chat-wrapper,
+            .downloads-wrapper {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Chat Section -->
+        <div class="chat-wrapper">
+            <header class="chat-header">
+                <div class="header-left">
+                    <div class="bot-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="header-info">
+                        <h2>Science AI Assistant</h2>
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <span>พร้อมให้บริการ</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="chat-messages" id="chat-messages">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 4rem; margin-bottom: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <h3 style="font-size: 1.5rem; color: #0f172a; margin-bottom: 10px;">สวัสดีครับ! 👋</h3>
+                    <p style="color: #64748b;">ฉันคือ AI Assistant ของคณะวิทยาศาสตร์ ศรีราชา<br>พร้อมตอบคำถามและช่วยเหลือคุณค่ะ</p>
+                </div>
+
+                <div class="typing-indicator" id="typing-indicator">
+                    <div class="message-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="typing-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-wrapper">
+                <form class="chat-input-form" id="chat-form">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="พิมพ์ข้อความของคุณ..."
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Downloads Section -->
+        <div class="downloads-wrapper">
+            <div class="downloads-header">
+                <h2>
+                    <i class="fas fa-download"></i>
+                    ดาวน์โหลดเอกสาร
+                </h2>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input 
+                        type="text" 
+                        id="search-pdf" 
+                        placeholder="ค้นหาเอกสาร..."
+                        onkeyup="searchPDF()"
+                    >
+                </div>
+            </div>
+
+            <div class="downloads-content" id="downloads-content">
+                <!-- PDF files will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PDF Data from your image
+        const pdfData = [
+            { id: 1, name: ' คำร้องทั่วไป (General)-Revised.pdf', category: 'ทั่วไป' },
+            { id: 2, name: ' ขอลงทะเบียนเรียน(Registration)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 3, name: ' ขอผ่อนผัน(Postpone tuition)-Revised.pdf', category: 'การเงิน' },
+            { id: 4, name: ' ขอลงทะเบียนเรียนควบ(Continuing course with prerequistie)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 5, name: ' ขอลงทะเบียนเรียนข้ามวิทยาเขต สถาบัน(Cross campus)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 6, name: ' ขอย้ายหลักสูตรหรือสาขาวิชาเอก(change major)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 7, name: ' ขอย้ายคณะ (change faculty)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 8, name: ' ขอเทียบรายวิชา(course transfer)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 9, name: ' ขอเทียบรายวิชาและการโอนหน่วยกิต(course and credit transfer)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 10, name: ' ขอลาพักการศึกษา(leave of absence)-Revised.pdf', category: 'ทั่วไป' },
+            { id: 11, name: ' ขอรักษาสถานภาพนิสิต(Maintain student statusMaintain student status)-Revised.pdf', category: 'ทั่วไป' },
+            { id: 12, name: ' ขอกลับเข้าศึกษาต่อ (Re- admission)-Revised.pdf', category: 'ลงทะเบียน' },
+            { id: 13, name: ' ขอคืนสภาพนิสิต(Student Reinstatement)-Revised.pdf', category: 'ทั่วไป' },
+            { id: 14, name: ' ขอสอบชดใช้ (make-up exam)-Revised.pdf', category: 'สอบ' },
+            { id: 15, name: ' ใบลา (leave)-Revised.pdf', category: 'ทั่วไป' },
+            { id: 16, name: '  ขอลาออกพร้อมขอคืนค่าประกันของเสียหาย (Resignation or refund of Insurance)-Revised.pdf', category: 'การเงิน' },
+            { id: 17, name: ' ขอคืนค่าประกันของเสียหาย (Refund of Insurance)-Revised.pdf', category: 'การเงิน' },
+            { id: 18, name: ' ขอคืนเงิน (Refund of tuition fee)-Revised.pdf', category: 'การเงิน' },
+            { id: 19, name: ' คำร้องขอหนังสื่อรับรองรายวิชา(กรณีสอบวิชาชีพครู)(Course Certificate)-Revised.pdf', category: 'เอกสาร' },
+            { id: 20, name: ' คำร้องขอลงทะเบียนเรียนเพิ่ม (Add Registration).pdf', category: 'ลงทะเบียน' },
+            { id: 21, name: '68CompareExperiences.pdf', category: 'เอกสารอื่นๆ' },
+            { id: 22, name: 'doc01194.pdf', category: 'เอกสารอื่นๆ' },
+            { id: 23, name: 'format.pdf', category: 'แบบฟอร์ม' },
+            { id: 24, name: 'formatEN.pdf', category: 'แบบฟอร์ม' },
+            { id: 25, name: 'KU1-Registration-Form.pdf', category: 'ลงทะเบียน' },
+            { id: 26, name: 'KU3-Add-Drop-form.pdf', category: 'ลงทะเบียน' },
+            { id: 27, name: 'new571.pdf', category: 'เอกสารอื่นๆ' },
+            { id: 28, name: 'คำสั่งแต่งตั้งกรรมการพิจารณาโทษนิสิต.pdf', category: 'ทั่วไป' },
+            { id: 29, name: 'แนวปฏิบัติสำหรับนิสิตในการเข้าสอบ-มก.pdf', category: 'สอบ' }
+        ];
+
+        // Group PDFs by category
+        function groupByCategory(pdfs) {
+            const grouped = {};
+            pdfs.forEach(pdf => {
+                if (!grouped[pdf.category]) {
+                    grouped[pdf.category] = [];
+                }
+                grouped[pdf.category].push(pdf);
+            });
+            return grouped;
+        }
+
+        // Display PDFs
+        function displayPDFs(pdfs = pdfData) {
+            const content = document.getElementById('downloads-content');
+            const grouped = groupByCategory(pdfs);
+            
+            let html = '';
+            for (const [category, files] of Object.entries(grouped)) {
+                html += `
+                    <div class="category-section">
+                        <div class="category-title">
+                            <i class="fas fa-folder"></i>
+                            ${category} (${files.length})
+                        </div>
+                        ${files.map(pdf => `
+                            <div class="pdf-item" onclick="downloadPDF('${pdf.name}', ${pdf.id})">
+                                <div class="pdf-icon">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <div class="pdf-info">
+                                    <div class="pdf-name">${pdf.name}</div>
+                                    <div class="pdf-meta">${category}</div>
+                                </div>
+                                <div class="download-icon">
+                                    <i class="fas fa-download"></i>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            content.innerHTML = html || '<p style="text-align: center; color: #64748b; padding: 20px;">ไม่พบเอกสาร</p>';
+        }
+
+        // Search PDFs
+        function searchPDF() {
+            const keyword = document.getElementById('search-pdf').value.toLowerCase();
+            if (keyword.length < 2) {
+                displayPDFs();
+                return;
+            }
+            
+            const filtered = pdfData.filter(pdf => 
+                pdf.name.toLowerCase().includes(keyword) || 
+                pdf.category.toLowerCase().includes(keyword)
+            );
+            displayPDFs(filtered);
+        }
+
+        // Download PDF
+        function downloadPDF(filename, id) {
+            // Create a link to download the PDF
+            // In production, this should point to your actual PDF file path
+            const link = document.createElement('a');
+            link.href = `/pdfs/${filename}`; // Adjust path to your PDF directory
+            link.download = filename;
+            link.click();
+            
+            // Show confirmation in chat
+            addMessage(`กำลังดาวน์โหลดไฟล์: ${filename}`, false);
+        }
+
+        // Chat functionality
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="fas fa-${isUser ? 'user' : 'robot'}"></i>
+                </div>
+                <div>
+                    <div class="message-content">${message}</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">${getCurrentTime()}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function showTyping(show = true) {
+            typingIndicator.style.display = show ? 'flex' : 'none';
+            scrollToBottom();
+        }
+
+        async function sendMessage(message) {
+            if (!message.trim()) return;
+
+            addMessage(message, true);
+            userInput.value = '';
+            showTyping(true);
+
+            // Simulate API response
+            setTimeout(() => {
+                showTyping(false);
+                addMessage('สวัสดีครับ! ฉันพร้อมช่วยเหลือคุณเกี่ยวกับเอกสารและข้อมูลต่างๆ ของคณะวิทยาศาสตร์ ศรีราชา คุณสามารถดาวน์โหลดเอกสารได้จากด้านขวามือเลยครับ');
+            }, 1000);
+        }
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (message) {
+                sendMessage(message);
+            }
+        });
+
+        // Initialize
+        displayPDFs();
+        userInput.focus();
+    </script>
+</body>
+</html>

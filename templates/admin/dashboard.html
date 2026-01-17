@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+<h1>📊 Dashboard ผู้ดูแลระบบ</h1>
+
+<h2>ประวัติการแชท</h2>
+<ul>
+    {% for item in chats %}
+    <li>
+        <strong>{{ item.time }}</strong>  
+        <br>ถาม: {{ item.user_message }}
+        <br>ตอบ: {{ item.bot_answer }}
+    </li>
+    {% endfor %}
+</ul>
+
+
+<h2>ประวัติการดาวน์โหลดเอกสาร</h2>
+<ul>
+    {% for item in downloads %}
+    <li>{{ item.time }} — {{ item.filename }}</li>
+    {% endfor %}
+</ul>
+
+</body>
+</html>

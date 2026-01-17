@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ดาวน์โหลดเอกสาร - Science Sriracha</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="nav-logo">
+        <span>Science Sriracha</span>
+    </div>
+    <div class="nav-links">
+        <a href="{{ url_for('home') }}" class="nav-btn">
+            <i class="fas fa-home"></i> หน้าแรก
+        </a>
+        <a href="{{ url_for('chat') }}" class="nav-btn">
+            <i class="fas fa-comments"></i> แชท
+        </a>
+        {% if current_user.is_authenticated %}
+            <span class="user-welcome">{{ current_user.username }}</span>
+            <a href="{{ url_for('logout') }}" class="nav-btn logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="nav-btn login-btn">
+                <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
+            </a>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="download-container">
+    <div class="download-header">
+        <h1><i class="fas fa-download"></i> ดาวน์โหลดเอกสาร</h1>
+        <p>ค้นหาและดาวน์โหลดเอกสารต่างๆ ของคณะ</p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-section">
+        <div class="search-box-large">
+            <i class="fas fa-search"></i>
+            <input 
+                id="search" 
+                type="text" 
+                placeholder="ค้นหาเอกสาร... (ชื่อไฟล์, หมวดหมู่)" 
+                onkeyup="searchPDF()"
+            >
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div id="results" class="search-results"></div>
+
+    <!-- Documents by Category -->
+    <div class="documents-grid">
+        {% for category, docs in categories.items() %}
+        <div class="category-card">
+            <div class="category-header">
+                <h2>
+                    <i class="fas fa-folder"></i> 
+                    {{ category }}
+                </h2>
+                <span class="doc-count">{{ docs|length }} ไฟล์</span>
+            </div>
+            <div class="document-list">
+                {% for doc in docs %}
+                <div class="document-item">
+                    <div class="doc-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h3>{{ doc.original_filename or doc.filename }}</h3>
+                        <p>
+                            <i class="fas fa-calendar"></i> 
+                            {{ doc.upload_date.strftime('%d/%m/%Y') if doc.upload_date else 'N/A' }}
+                            <span class="download-badge">
+                                <i class="fas fa-download"></i> 
+                                {{ doc.download_count or 0 }}
+                            </span>
+                        </p>
+                    </div>
+                    <a href="{{ url_for('download_file', doc_id=doc.id) }}" class="btn-download">
+                        <i class="fas fa-download"></i> ดาวน์โหลด
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+/* Navbar */
+.navbar {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.nav-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: white;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.login-btn {
+    background: #3b82f6;
+}
+
+.logout-btn {
+    background: #ef4444;
+}
+
+.user-welcome {
+    color: white;
+}
+
+/* Download Container */
+body {
+    background: #f1f5f9;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+.download-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.download-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.download-header h1 {
+    font-size: 2.5rem;
+    color: #0f172a;
+    margin-bottom: 10px;
+}
+
+.download-header p {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+/* Search Section */
+.search-section {
+    margin-bottom: 40px;
+}
+
+.search-box-large {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 15px 25px;
+    border-radius: 50px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.search-box-large i {
+    color: #64748b;
+    font-size: 1.2rem;
+}
+
+.search-box-large input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    color: #0f172a;
+}
+
+/* Search Results */
+.search-results {
+    margin-bottom: 30px;
+}
+
+/* Documents Grid */
+.documents-grid {
+    display: grid;
+    gap: 30px;
+}
+
+.category-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.category-header h2 {
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5rem;
+}
+
+.category-header i {
+    color: #3b82f6;
+}
+
+.doc-count {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Document List */
+.document-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.document-item:hover {
+    background: #f1f5f9;
+    transform: translateX(5px);
+}
+
+.doc-icon {
+    width: 50px;
+    height: 50px;
+    background: #fee2e2;
+    color: #ef4444;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.doc-info {
+    flex: 1;
+}
+
+.doc-info h3 {
+    color: #0f172a;
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+.doc-info p {
+    color: #64748b;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.download-badge {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.btn-download {
+    padding: 10px 20px;
+    background: #3b82f6;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-download:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .download-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .document-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .btn-download {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .category-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+</style>
+
+<script>
+async function searchPDF() {
+    const keyword = document.getElementById("search").value;
+    const resultsDiv = document.getElementById("results");
+    
+    if (keyword.length < 2) {
+        resultsDiv.innerHTML = "";
+        return;
+    }
+    
+    try {
+        const res = await fetch("/api/search_pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ keyword })
+        });
+        
+        const data = await res.json();
+        
+        if (data.length === 0) {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+                    <i class="fas fa-search" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 15px;"></i>
+                    <p style="color: #64748b; font-size: 1.1rem;">ไม่พบเอกสารที่ค้นหา</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = `
+            <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 30px;">
+                <h3 style="margin-bottom: 20px; color: #0f172a;">
+                    <i class="fas fa-search"></i> ผลการค้นหา (${data.length} ไฟล์)
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+        `;
+        
+        data.forEach(item => {
+            html += `
+                <div class="document-item">
+                    <div class="doc-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div class="doc-info">
+                        <h3>${item.filename}</h3>
+                        <p><i class="fas fa-folder"></i> ${item.category}</p>
+                    </div>
+                    <a href="/download/${item.id}" class="btn-download">
+                        <i class="fas fa-download"></i> ดาวน์โหลด
+                    </a>
+                </div>
+            `;
+        });
+        
+        html += `</div></div>`;
+        resultsDiv.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        resultsDiv.innerHTML = `
+            <div style="text-align: center; padding: 20px; background: #fee2e2; color: #991b1b; border-radius: 10px;">
+                เกิดข้อผิดพลาดในการค้นหา
+            </div>
+        `;
+    }
+}
+</script>
+
+</body>
+</html>

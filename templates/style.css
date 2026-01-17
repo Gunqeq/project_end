@@ -1,0 +1,83 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f6fa;
+}
+
+/* HEADER */
+.top-header {
+    background: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.menu a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #003c85;
+    font-weight: bold;
+}
+
+/* MAIN LAYOUT GRID */
+.main-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    padding: 30px;
+}
+
+/* SLIDER */
+.slider-container {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.slider img {
+    width: 100%;
+    display: block;
+}
+
+/* RIGHT CARD */
+.side-card {
+    background: #e7f1ff;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.dean-img {
+    width: 100%;
+    border-radius: 12px;
+}
+
+.btn {
+    background: #003c85;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    margin-top: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* GRID MENU */
+.menu-grid {
+    padding: 20px 30px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.grid-item {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}

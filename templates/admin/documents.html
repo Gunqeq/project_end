@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการเอกสาร - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-flask"></i> Science Admin</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="nav-item">
+                <i class="fas fa-users"></i> ผู้ใช้งาน
+            </a>
+            <a href="{{ url_for('admin_faqs') }}" class="nav-item">
+                <i class="fas fa-question-circle"></i> จัดการ FAQ
+            </a>
+            <a href="{{ url_for('admin_documents') }}" class="nav-item active">
+                <i class="fas fa-file-pdf"></i> เอกสาร
+            </a>
+            <a href="{{ url_for('home') }}" class="nav-item">
+                <i class="fas fa-home"></i> กลับหน้าหลัก
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-item logout">
+                <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="content-header">
+            <h1>📄 จัดการเอกสาร</h1>
+            <button class="btn-primary" onclick="document.getElementById('uploadModal').style.display='flex'">
+                <i class="fas fa-upload"></i> อัปโหลดเอกสาร
+            </button>
+        </header>
+
+        <!-- Documents Table -->
+        <div class="table-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ชื่อไฟล์</th>
+                        <th>หมวดหมู่</th>
+                        <th>วันที่อัปโหลด</th>
+                        <th>ดาวน์โหลด</th>
+                        <th>ผู้อัปโหลด</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td>{{ doc.id }}</td>
+                        <td>
+                            <i class="fas fa-file-pdf" style="color: #ef4444;"></i>
+                            {{ doc.original_filename }}
+                        </td>
+                        <td><span class="badge">{{ doc.category }}</span></td>
+                        <td>{{ doc.upload_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <span class="download-count">
+                                <i class="fas fa-download"></i> {{ doc.download_count }}
+                            </span>
+                        </td>
+                        <td>User #{{ doc.uploaded_by }}</td>
+                        <td>
+                            <a href="{{ url_for('download_file', doc_id=doc.id) }}" class="btn-download">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <button class="btn-delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>อัปโหลดเอกสารใหม่</h2>
+                <span class="close" onclick="document.getElementById('uploadModal').style.display='none'">&times;</span>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>หมวดหมู่</label>
+                    <select name="category" required>
+                        <option value="academic">วิชาการ</option>
+                        <option value="forms">แบบฟอร์ม</option>
+                        <option value="guides">คู่มือ</option>
+                        <option value="announcements">ประกาศ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ไฟล์เอกสาร</label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx" required>
+                    <small>รองรับ: PDF, DOC, DOCX, PPT, PPTX (ไม่เกิน 16MB)</small>
+                </div>
+                <button type="submit" class="btn-submit">อัปโหลด</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .badge {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .download-count {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .btn-download {
+            background: #dcfce7;
+            color: #166534;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .form-group small {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</body>
+</html>
