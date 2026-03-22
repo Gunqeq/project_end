@@ -136,11 +136,27 @@ tr:hover td{background:#f9fafb}
           <div class="stat-label">หน้าใน Knowledge Base</div>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon green"><i class="fas fa-star"></i></div>
-        <div>
-          <div class="stat-value" id="stat-satisfaction">—</div>
-          <div class="stat-label">ความพึงพอใจ (<span id="stat-fb-total">0</span> ความคิดเห็น)</div>
+      <div class="stat-card" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <div style="display:flex;align-items:center;gap:12px;width:100%;">
+          <div class="stat-icon green"><i class="fas fa-star"></i></div>
+          <div style="flex:1;">
+            <div class="stat-value" id="stat-satisfaction">—</div>
+            <div class="stat-label">ความพึงพอใจรวม</div>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div style="width:100%;">
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#6b7280;margin-bottom:4px;">
+            <span>👍 <span id="stat-positive">0</span> ถูกต้อง</span>
+            <span>👎 <span id="stat-negative">0</span> ไม่ถูกต้อง</span>
+          </div>
+          <div style="background:#f3f4f6;border-radius:99px;height:8px;overflow:hidden;">
+            <div id="satisfaction-bar" style="height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:99px;width:0%;transition:width 0.6s ease;"></div>
+          </div>
+          <div style="font-size:0.72rem;color:#9ca3af;margin-top:4px;text-align:center;">
+            จากทั้งหมด <span id="stat-fb-total">0</span> ความคิดเห็น
+            (<span id="stat-fb-rate">—</span> ของแชททั้งหมด)
+          </div>
         </div>
       </div>
     </div>
@@ -236,8 +252,18 @@ async function loadStats() {
     document.getElementById('stat-today').textContent    = d.today_chats.toLocaleString();
     document.getElementById('stat-sessions').textContent = d.total_sessions.toLocaleString();
     document.getElementById('stat-pages').textContent    = d.scraped_pages.toLocaleString();
-    document.getElementById('stat-satisfaction').textContent = d.satisfaction !== null ? d.satisfaction + '%' : 'ยังไม่มี';
-    document.getElementById('stat-fb-total').textContent    = d.feedback_total || 0;
+    const sat = d.satisfaction;
+    const fbTotal = d.feedback_total || 0;
+    const positive = d.feedback_positive ?? 0;
+    const negative = Math.max(0, fbTotal - positive);
+    const fbRate = d.total_chats > 0 ? Math.round(fbTotal / d.total_chats * 100) : 0;
+
+    document.getElementById('stat-satisfaction').textContent = sat !== null ? sat + '%' : 'ยังไม่มีข้อมูล';
+    document.getElementById('stat-fb-total').textContent     = fbTotal;
+    document.getElementById('stat-positive').textContent     = positive;
+    document.getElementById('stat-negative').textContent     = negative;
+    document.getElementById('stat-fb-rate').textContent      = fbRate + '%';
+    document.getElementById('satisfaction-bar').style.width  = (sat || 0) + '%';
     document.getElementById('last-update').textContent   = 'อัปเดต: ' + new Date().toLocaleTimeString('th-TH');
     drawChart(d.daily_chart);
     renderTopQuestions(d.top_questions);

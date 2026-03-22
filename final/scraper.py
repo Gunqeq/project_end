@@ -1,89 +1,141 @@
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 import time
+
+BASE_URL = "https://sci.src.ku.ac.th/"
+MAX_PAGES = 60  # crawl สูงสุด 60 หน้า
+
+# หน้าสำคัญที่ต้องมีเสมอ (priority pages)
+PRIORITY_PAGES = {
+    "home":             "https://sci.src.ku.ac.th/",
+    "general_info":     "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/",
+    "faq":              "https://sci.src.ku.ac.th/qa/",
+    "student":          "https://sci.src.ku.ac.th/%e0%b8%99%e0%b8%b4%e0%b8%aa%e0%b8%b4%e0%b8%95/",
+    "parent":           "https://sci.src.ku.ac.th/%e0%b8%9c%e0%b8%b9%e0%b9%89%e0%b8%9b%e0%b8%81%e0%b8%84%e0%b8%a3%e0%b8%ad%e0%b8%87-2-2/",
+    "alumni":           "https://sci.src.ku.ac.th/%e0%b8%a8%e0%b8%b4%e0%b8%a9%e0%b8%a2%e0%b9%8c%e0%b9%80%e0%b8%81%e0%b9%88%e0%b8%b2/",
+    "curriculum":       "https://sci.src.ku.ac.th/en/program/",
+    "cs_program":       "https://sci.src.ku.ac.th/program/computer-science/",
+    "it_program":       "https://sci.src.ku.ac.th/program/information-technology/",
+    "digital_program":  "https://sci.src.ku.ac.th/program/digital-science-and-technology/",
+    "env_program":      "https://sci.src.ku.ac.th/program/environmental-science/",
+    "special_cs":       "https://sci.src.ku.ac.th/program/special-computer-science/",
+    "special_it":       "https://sci.src.ku.ac.th/program/special-information-technology/",
+    "special_digital":  "https://sci.src.ku.ac.th/program/special-digital-science-and-technology/",
+    "dean":             "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%84%e0%b8%93%e0%b8%9a%e0%b8%94%e0%b8%b5%e0%b9%81%e0%b8%a5%e0%b8%b0%e0%b8%9c%e0%b8%b9%e0%b9%89%e0%b8%9a%e0%b8%a3%e0%b8%b4%e0%b8%ab%e0%b8%b2%e0%b8%a3/",
+    "dean_history":     "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%97%e0%b8%b3%e0%b9%80%e0%b8%99%e0%b8%b5%e0%b8%a2%e0%b8%9a%e0%b8%84%e0%b8%93%e0%b8%9a%e0%b8%94%e0%b8%b5/",
+    "academic_staff":   "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%9a%e0%b8%b8%e0%b8%84%e0%b8%a5%e0%b8%b2%e0%b8%81%e0%b8%a3%e0%b8%a7%e0%b8%b4%e0%b8%8a%e0%b8%b2%e0%b8%81%e0%b8%b2%e0%b8%a3-2/",
+    "support_staff":    "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%9a%e0%b8%b8%e0%b8%84%e0%b8%a5%e0%b8%b2%e0%b8%81%e0%b8%a3%e0%b8%aa%e0%b8%99%e0%b8%b1%e0%b8%9a%e0%b8%aa%e0%b8%99%e0%b8%b8%e0%b8%99/",
+    "cs_staff":         "https://sci.src.ku.ac.th/department/computer-science/",
+    "it_staff":         "https://sci.src.ku.ac.th/department/digital-science-and-technology/",
+    "env_staff":        "https://sci.src.ku.ac.th/department/natural-product-science-technology/",
+    "env_master":       "https://sci.src.ku.ac.th/department/natural-product-science-technology-master/",
+    "chem_staff":       "https://sci.src.ku.ac.th/department/applied-chemical-science-and-technology/",
+    "math_staff":       "https://sci.src.ku.ac.th/department/data-analytics-and-actuarial-science/",
+    "physics_staff":    "https://sci.src.ku.ac.th/department/physics/",
+    "sports_staff":     "https://sci.src.ku.ac.th/department/sports-science/",
+    "award":            "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/award/",
+    "km":               "https://sci.src.ku.ac.th/knowledgemanagement/",
+    "research":         "https://sci.src.ku.ac.th/%e0%b8%a7%e0%b8%b4%e0%b8%88%e0%b8%b1%e0%b8%a2/",
+    "news":             "https://sci.src.ku.ac.th/category/news/",
+    "admission":        "https://admissions.src.ku.ac.th/",
+}
+
+# หมวดหมู่ URL patterns
+SKIP_PATTERNS = [
+    "wp-admin", "wp-login", "wp-json", "xmlrpc",
+    "feed", "comment", "attachment", "?replytocom",
+    ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".zip",
+    "facebook.com", "youtube.com", "twitter.com", "instagram.com",
+    "page/", "?page_id", "#",
+]
+
+def should_skip(url):
+    return any(p in url.lower() for p in SKIP_PATTERNS)
+
+def is_same_domain(url):
+    parsed = urlparse(url)
+    return parsed.netloc in ("sci.src.ku.ac.th", "admissions.src.ku.ac.th", "")
 
 def scrape_page(url):
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, headers=headers, timeout=20)
+        response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
-        for tag in soup(["script", "style", "noscript", "header", "footer", "nav"]):
+
+        for tag in soup(["script", "style", "noscript", "header", "footer", "nav", "aside"]):
             tag.extract()
-        main = soup.find("main") or soup.find("article") or soup.find(class_="entry-content") or soup.body
-        return main.get_text(separator=" ", strip=True) if main else ""
-    except requests.exceptions.Timeout:
-        print(f"Timeout: {url}")
-        return ""
+
+        main = (
+            soup.find("main") or
+            soup.find("article") or
+            soup.find("div", class_=lambda c: c and any(x in str(c) for x in ["content", "entry", "post-body"])) or
+            soup.body
+        )
+
+        if not main:
+            return "", []
+
+        text = main.get_text(separator="\n", strip=True)
+        lines = [l.strip() for l in text.splitlines() if l.strip() and len(l.strip()) > 3]
+        text = "\n".join(lines)
+
+        # เก็บ links ทั้งหมดในหน้านี้
+        links = []
+        for a in soup.find_all("a", href=True):
+            href = urljoin(url, a["href"])
+            if is_same_domain(href) and not should_skip(href):
+                links.append(href.split("#")[0].rstrip("/") + "/")
+
+        return text, list(set(links))
+
     except Exception as e:
-        print(f"Error scraping {url}: {e}")
-        return ""
+        print(f"  Error: {e}")
+        return "", []
 
 
 def get_kusrc_data():
-    # หน้าสำคัญทั้งหมดของคณะ แบ่งตาม category ชัดเจน
-    pages = {
-        # ข้อมูลทั่วไป
-        "home":             "https://sci.src.ku.ac.th/",
-        "general_info":     "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/",
-        "faq":              "https://sci.src.ku.ac.th/qa/",
-
-        # หลักสูตร
-        "curriculum":       "https://sci.src.ku.ac.th/en/program/",
-        "cs_program":       "https://sci.src.ku.ac.th/program/computer-science/",
-        "it_program":       "https://sci.src.ku.ac.th/program/information-technology/",
-        "special_cs":       "https://sci.src.ku.ac.th/program/special-computer-science/",
-        "special_it":       "https://sci.src.ku.ac.th/program/special-information-technology/",
-        "special_digital":  "https://sci.src.ku.ac.th/program/special-digital-science-and-technology/",
-        "env_program":      "https://sci.src.ku.ac.th/program/environmental-science/",
-
-        # บุคลากร
-        "dean":             "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%84%e0%b8%93%e0%b8%9a%e0%b8%94%e0%b8%b5%e0%b9%81%e0%b8%a5%e0%b8%b0%e0%b8%9c%e0%b8%b9%e0%b9%89%e0%b8%9a%e0%b8%a3%e0%b8%b4%e0%b8%ab%e0%b8%b2%e0%b8%a3/",
-        "academic_staff":   "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%9a%e0%b8%b8%e0%b8%84%e0%b8%a5%e0%b8%b2%e0%b8%81%e0%b8%a3%e0%b8%a7%e0%b8%b4%e0%b8%8a%e0%b8%b2%e0%b8%81%e0%b8%b2%e0%b8%a3-2/",
-        "support_staff":    "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%9a%e0%b8%b8%e0%b8%84%e0%b8%a5%e0%b8%b2%e0%b8%81%e0%b8%a3%e0%b8%aa%e0%b8%99%e0%b8%b1%e0%b8%9a%e0%b8%aa%e0%b8%99%e0%b8%b8%e0%b8%99/",
-        "cs_staff":         "https://sci.src.ku.ac.th/department/computer-science/",
-        "it_staff":         "https://sci.src.ku.ac.th/department/digital-science-and-technology/",
-        "env_staff":        "https://sci.src.ku.ac.th/department/natural-product-science-technology/",
-        "env_master_staff": "http://sci.src.ku.ac.th/department/natural-product-science-technology-master/",
-        "digital_staff":    "https://sci.src.ku.ac.th/department/special-digital-science-and-technology/",
-
-        # ค่าเทอม
-        "cs_tuition":       "https://sci.src.ku.ac.th/program/computer-science/",
-        "it_tuition":       "https://sci.src.ku.ac.th/program/information-technology/",
-        "digital_tuition":  "https://sci.src.ku.ac.th/program/special-digital-science-and-technology/",
-
-        # รางวัลและการจัดการความรู้
-        "award":            "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/award/",
-        "km":               "https://sci.src.ku.ac.th/knowledgemanagement/",
-        "dean_history":     "https://sci.src.ku.ac.th/%e0%b8%82%e0%b9%89%e0%b8%ad%e0%b8%a1%e0%b8%b9%e0%b8%a5%e0%b8%97%e0%b8%b1%e0%b9%88%e0%b8%a7%e0%b9%84%e0%b8%9b%e0%b8%82%e0%b8%ad%e0%b8%87%e0%b8%84%e0%b8%93%e0%b8%b0/%e0%b8%97%e0%b8%b3%e0%b9%80%e0%b8%99%e0%b8%b5%e0%b8%a2%e0%b8%9a%e0%b8%84%e0%b8%93%e0%b8%9a%e0%b8%94%e0%b8%b5/",
-    }
-
     documents = []
+    visited = set()
+    to_visit = []
 
-    for category, url in pages.items():
-        print(f"Scraping [{category}]: {url}")
-        text = None
+    # เริ่มจาก priority pages ก่อนเสมอ
+    print(f"[Scraper] Starting with {len(PRIORITY_PAGES)} priority pages...")
+    for category, url in PRIORITY_PAGES.items():
+        norm = url.rstrip("/") + "/"
+        if norm not in visited:
+            to_visit.append((norm, category))
+            visited.add(norm)
 
-        for attempt in range(2):
-            text = scrape_page(url)
-            if text:
-                break
-            if attempt < 1:
-                time.sleep(2)
+    scraped_count = 0
 
-        if text:
+    while to_visit and scraped_count < MAX_PAGES:
+        url, category = to_visit.pop(0)
+        print(f"[{scraped_count+1}/{MAX_PAGES}] Scraping [{category}]: {url[:70]}")
+
+        text, found_links = scrape_page(url)
+
+        if text and len(text) > 100:
             documents.append({
-                "content": text[:10000],
+                "content":  text[:10000],
                 "category": category,
-                "source": url
+                "source":   url
             })
-            print(f"  OK ({len(text)} chars)")
+            print(f"  OK ({len(text)} chars, found {len(found_links)} links)")
+            scraped_count += 1
+
+            # เพิ่ม links ที่ค้นพบเข้า queue (ถ้ายังไม่เคย visit)
+            for link in found_links:
+                if link not in visited and scraped_count + len(to_visit) < MAX_PAGES:
+                    visited.add(link)
+                    to_visit.append((link, "auto"))
         else:
-            print(f"  FAILED")
+            print(f"  SKIP (empty or too short)")
 
-        time.sleep(1)
+        time.sleep(0.8)
 
-    print(f"\nTotal scraped: {len(documents)} pages")
+    print(f"\n[Scraper] Total: {len(documents)} pages scraped")
     return documents
 
 

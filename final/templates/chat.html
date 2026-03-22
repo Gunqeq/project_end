@@ -709,15 +709,64 @@
         @media (max-width: 1024px) {
             .container {
                 grid-template-columns: 1fr;
+                padding: 0;
+                gap: 0;
             }
-
+            .chat-section {
+                order: 1;
+                border-radius: 0;
+                height: calc(100vh - 68px);
+            }
             .sidebar {
-                order: -1;
+                order: 2;
+                padding: 16px;
+                gap: 16px;
             }
+        }
+
+        @media (max-width: 768px) {
+            .main-header { padding: 10px 16px; }
+            .header-text h1 { font-size: 0.95rem; }
+            .header-text p { font-size: 0.75rem; }
+            .ku-logo { width: 36px; height: 36px; }
 
             .chat-section {
-                height: 500px;
+                height: calc(100dvh - 62px);
+                height: calc(100vh - 62px);
             }
+            .chat-messages { padding: 14px; }
+            .message-content { max-width: 88%; font-size: 0.9rem; }
+            .user .message-content { max-width: 88%; }
+
+            /* Input */
+            .chat-input .input-wrapper { margin: 8px 12px 10px; }
+            .input-wrapper input { font-size: 16px; padding: 8px 4px; }
+            .send-btn { width: 42px; height: 42px; }
+
+            /* Suggest chips — scroll แนวนอนบนมือถือ */
+            .suggest-bar {
+                flex-wrap: nowrap !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding: 8px 12px 6px;
+                gap: 6px;
+            }
+            .suggest-bar::-webkit-scrollbar { display: none; }
+            .suggest-label { flex-shrink: 0; }
+            .suggest-chip { flex-shrink: 0; }
+            #suggest-chips {
+                flex-wrap: nowrap !important;
+                display: flex;
+                gap: 6px;
+            }
+
+            /* Welcome screen */
+            .welcome-screen { padding: 30px 16px; }
+            .welcome-icon { font-size: 2.5rem; margin-bottom: 12px; }
+            .welcome-screen h3 { font-size: 1.1rem; }
+            .welcome-screen p { font-size: 0.85rem; }
         }
 
         @media (max-width: 768px) {
@@ -1147,13 +1196,20 @@
         }
 
         // ── Load Top 3 Popular Questions ──────────────
-        async function loadSuggestChips() {
+        async function loadSuggestChips(retryCount = 0) {
             try {
-                const r = await fetch('/api/admin/stats');
+                const r = await fetch('/api/top_questions');
                 if (!r.ok) return;
                 const d = await r.json();
-                const top3 = (d.top_questions || []).slice(0, 3);
-                if (!top3.length) return;
+                const top3 = (d.questions || []).slice(0, 3);
+
+                if (!top3.length) {
+                    // ถ้ายังไม่มีข้อมูล retry สูงสุด 3 ครั้ง ห่างกัน 3 วินาที
+                    if (retryCount < 3) {
+                        setTimeout(() => loadSuggestChips(retryCount + 1), 3000);
+                    }
+                    return;
+                }
 
                 const bar   = document.getElementById('suggest-bar');
                 const chips = document.getElementById('suggest-chips');
@@ -1166,7 +1222,10 @@
 
                 bar.style.display = 'flex';
             } catch(e) {
-                // ถ้าโหลดไม่ได้ (ยังไม่มีข้อมูล) ก็ไม่แสดง
+                // retry ถ้า error
+                if (retryCount < 3) {
+                    setTimeout(() => loadSuggestChips(retryCount + 1), 3000);
+                }
             }
         }
 

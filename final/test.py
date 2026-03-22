@@ -21,6 +21,12 @@ load_dotenv()
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///science_assistant.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "connect_args": {
+        "timeout": 60,
+        "check_same_thread": False,
+    },
+}
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "sciKU-secret-2024")
 db = SQLAlchemy(app)
 
@@ -102,7 +108,7 @@ def run_scrape(trigger="auto"):
                 else:
                     db.session.add(ScrapedPage(url=item["source"], category=item["category"], content=item["content"]))
             db.session.commit()
-            log = ScrapeLog.query.get(log_id)
+            log = db.session.get(ScrapeLog, log_id)
             log.pages = len(data)
             log.finished_at = datetime.utcnow()
             log.status = "done"
@@ -126,20 +132,27 @@ def scrape_in_background(trigger="auto"):
 # Auto-scrape เที่ยงคืนทุกวัน
 # ──────────────────────────────────────────
 def start_scheduler():
-    """รอจนถึงเที่ยงคืน แล้ว scrape ใหม่ วนซ้ำทุกวัน"""
+    """รอจนถึงเที่ยงคืนเวลาไทย (UTC+7 = 17:00 UTC) แล้ว scrape ใหม่"""
+    from datetime import timedelta
+    THAI_OFFSET = 7  # UTC+7
+
     def _loop():
         while True:
-            now = datetime.utcnow()
-            # คำนวณวินาทีที่เหลือจนถึงเที่ยงคืน UTC (00:00)
-            next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            from datetime import timedelta
-            next_midnight += timedelta(days=1)
-            wait_secs = (next_midnight - datetime.utcnow()).total_seconds()
-            print(f"[Scheduler] Next auto-scrape in {wait_secs/3600:.1f} hours")
+            now_utc = datetime.utcnow()
+            now_thai = now_utc + timedelta(hours=THAI_OFFSET)
+
+            # เที่ยงคืนไทย = 00:00 Thai = 17:00 UTC วันก่อนหน้า
+            next_midnight_thai = now_thai.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            next_midnight_utc  = next_midnight_thai - timedelta(hours=THAI_OFFSET)
+            wait_secs = (next_midnight_utc - datetime.utcnow()).total_seconds()
+
+            thai_time_str = next_midnight_thai.strftime("%d/%m/%Y 00:00")
+            print(f"[Scheduler] Next auto-scrape at {thai_time_str} Thai time ({wait_secs/3600:.1f} hours from now)")
             time.sleep(wait_secs)
             scrape_in_background("auto")
+
     threading.Thread(target=_loop, daemon=True).start()
-    print("[Scheduler] Auto-scrape scheduled at 00:00 UTC every day")
+    print("[Scheduler] Auto-scrape scheduled at 00:00 Thai time (UTC+7) every day")
 
 # ──────────────────────────────────────────
 # PDF helpers
@@ -290,6 +303,18 @@ def download_file(doc_id):
         return "File not found", 404
     return send_from_directory(PDF_DIR, pdfs[doc_id - 1], as_attachment=True)
 
+@app.route("/api/top_questions")
+def api_top_questions():
+    """Top 3 คำถามยอดนิยม — public endpoint ไม่ต้อง login"""
+    try:
+        from collections import Counter
+        all_msgs = [r.user_message.strip().lower()
+                    for r in ChatLog.query.with_entities(ChatLog.user_message).all()]
+        top3 = [{"question": q, "count": c} for q, c in Counter(all_msgs).most_common(3)]
+        return jsonify({"questions": top3})
+    except Exception:
+        return jsonify({"questions": []})
+
 @app.route("/api/documents")
 def api_documents():
     docs = []
@@ -343,57 +368,49 @@ def dashboard():
 @app.route("/api/admin/stats")
 @admin_required
 def api_admin_stats():
-    """สถิติรวมสำหรับ dashboard"""
-    from sqlalchemy import func, cast, Date
-
-    total_chats = ChatLog.query.count()
-    today = datetime.utcnow().date()
-    today_chats = ChatLog.query.filter(
-        func.date(ChatLog.timestamp) == today
-    ).count()
-
-    # Chat 7 วันล่าสุด
-    from datetime import timedelta
-    daily = []
-    for i in range(6, -1, -1):
-        d = today - timedelta(days=i)
-        count = ChatLog.query.filter(func.date(ChatLog.timestamp) == d).count()
-        daily.append({"date": d.strftime("%d/%m"), "count": count})
-
-    # Top 10 คำถามยอดนิยม (ตัด whitespace แล้วนับ)
-    from collections import Counter
-    all_msgs = [r.user_message.strip().lower() for r in ChatLog.query.with_entities(ChatLog.user_message).all()]
-    top_questions = Counter(all_msgs).most_common(10)
-
-    # Scrape status
-    last_scrape = ScrapeLog.query.order_by(ScrapeLog.started_at.desc()).first()
-    scrape_logs = ScrapeLog.query.order_by(ScrapeLog.started_at.desc()).limit(5).all()
-
-    # Feedback stats
-    total_fb   = ChatLog.query.filter(ChatLog.feedback != None).count()
-    positive   = ChatLog.query.filter(ChatLog.feedback == 1).count()
-    satisfaction = round(positive / total_fb * 100, 1) if total_fb > 0 else None
-
-    return jsonify({
-        "total_chats":    total_chats,
-        "today_chats":    today_chats,
-        "scraped_pages":  ScrapedPage.query.count(),
-        "total_sessions": db.session.query(func.count(func.distinct(ChatLog.session_id))).scalar() or 0,
-        "feedback_total": total_fb,
-        "satisfaction":   satisfaction,
-        "daily_chart":    daily,
-        "top_questions":  [{"question": q, "count": c} for q, c in top_questions],
-        "last_scrape": {
-            "status":      last_scrape.status      if last_scrape else "ยังไม่เคย scrape",
-            "finished_at": last_scrape.finished_at.strftime("%d/%m/%Y %H:%M") if last_scrape and last_scrape.finished_at else "-",
-            "pages":       last_scrape.pages       if last_scrape else 0,
-        },
-        "scrape_logs": [{
-            "id": l.id, "trigger": l.trigger, "status": l.status, "pages": l.pages,
-            "started_at":  l.started_at.strftime("%d/%m/%Y %H:%M")  if l.started_at  else "-",
-            "finished_at": l.finished_at.strftime("%d/%m/%Y %H:%M") if l.finished_at else "-",
-        } for l in scrape_logs],
-    })
+    try:
+        from sqlalchemy import func
+        from datetime import timedelta
+        from collections import Counter
+        today = datetime.utcnow().date()
+        total_chats  = ChatLog.query.count()
+        today_chats  = ChatLog.query.filter(func.date(ChatLog.timestamp) == today).count()
+        daily = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            cnt = ChatLog.query.filter(func.date(ChatLog.timestamp) == d).count()
+            daily.append({"date": d.strftime("%d/%m"), "count": cnt})
+        all_msgs = [r.user_message.strip().lower() for r in ChatLog.query.with_entities(ChatLog.user_message).all()]
+        top_questions = Counter(all_msgs).most_common(10)
+        last_scrape = ScrapeLog.query.order_by(ScrapeLog.started_at.desc()).first()
+        scrape_logs = ScrapeLog.query.order_by(ScrapeLog.started_at.desc()).limit(5).all()
+        total_fb     = ChatLog.query.filter(ChatLog.feedback != None).count()
+        positive     = ChatLog.query.filter(ChatLog.feedback == 1).count()
+        satisfaction = round(positive / total_fb * 100, 1) if total_fb > 0 else None
+        return jsonify({
+            "total_chats":    total_chats,
+            "today_chats":    today_chats,
+            "feedback_positive": positive,   
+            "scraped_pages":  ScrapedPage.query.count(),
+            "total_sessions": db.session.query(func.count(func.distinct(ChatLog.session_id))).scalar() or 0,
+            "feedback_total": total_fb,
+            "satisfaction":   satisfaction,
+            "daily_chart":    daily,
+            "top_questions":  [{"question": q, "count": c} for q, c in top_questions],
+            "last_scrape": {
+                "status":      last_scrape.status if last_scrape else "ยังไม่เคย scrape",
+                "finished_at": last_scrape.finished_at.strftime("%d/%m/%Y %H:%M") if last_scrape and last_scrape.finished_at else "-",
+                "pages":       last_scrape.pages if last_scrape else 0,
+            },
+            "scrape_logs": [{
+                "id": l.id, "trigger": l.trigger, "status": l.status, "pages": l.pages,
+                "started_at":  l.started_at.strftime("%d/%m/%Y %H:%M") if l.started_at  else "-",
+                "finished_at": l.finished_at.strftime("%d/%m/%Y %H:%M") if l.finished_at else "-",
+            } for l in scrape_logs],
+        })
+    except Exception as e:
+        print(f"[Stats Error] {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/admin/chatlogs")
 @admin_required
@@ -475,12 +492,46 @@ def scrape_status():
 def initialize_app():
     """เรียกตอน startup ทั้ง local และ Render/gunicorn"""
     with app.app_context():
+        # Step 1: สร้าง table ใหม่ที่ยังไม่มี
         db.create_all()
+
+        # เปิด WAL mode — ให้ read/write พร้อมกันได้ (แก้ database is locked)
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                conn.execute(text("PRAGMA journal_mode=WAL"))
+                conn.execute(text("PRAGMA synchronous=NORMAL"))
+                conn.commit()
+            print("[DB] WAL mode enabled")
+        except Exception as e:
+            print(f"[DB] WAL setup error: {e}")
+
+        # Step 2: Auto-migrate column ที่อาจขาดใน DB เก่า
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                cols = [r[1] for r in conn.execute(text("PRAGMA table_info(chat_log)")).fetchall()]
+                if "feedback" not in cols:
+                    conn.execute(text("ALTER TABLE chat_log ADD COLUMN feedback INTEGER"))
+                    conn.commit()
+                    print("[Migration] Added column: feedback")
+                else:
+                    print("[Migration] Schema OK")
+        except Exception as e:
+            print(f"[Migration] Error: {e}")
         print(f"[PDF] Found {len(ALL_PDFS)} files")
         count = ScrapedPage.query.count()
         if count == 0:
             print("[Startup] DB ว่าง → scrape ทันที")
-            scrape_in_background(trigger="startup")
+            # บน production (Render) ให้ delay scrape 30 วิ รอ DB พร้อมก่อน
+            is_production = os.environ.get("FLASK_ENV") == "production"
+            if is_production:
+                def delayed_scrape():
+                    time.sleep(30)
+                    run_scrape("startup")
+                threading.Thread(target=delayed_scrape, daemon=True).start()
+            else:
+                scrape_in_background(trigger="startup")
         else:
             print(f"[Startup] DB มี {count} หน้า → โหลดจาก DB ข้าม scrape")
             load_context_from_db()

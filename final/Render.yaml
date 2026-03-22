@@ -2,6 +2,7 @@ services:
   - type: web
     name: science-assistant
     runtime: python
+    pythonVersion: "3.11.9"
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn test:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
@@ -13,3 +14,5 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
+      - key: FLASK_ENV
+        value: production
