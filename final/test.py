@@ -13,6 +13,10 @@ from dotenv import load_dotenv
 from prompt import prompt
 from scraper import get_kusrc_data
 
+
+
+app = Flask(__name__)
+
 load_dotenv()
 
 # ──────────────────────────────────────────
