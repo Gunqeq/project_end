@@ -10,30 +10,19 @@ import json
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from final.prompt import prompt
-from final.scraper import get_kusrc_data
-
-
-
-app = Flask(__name__)
+from prompt import prompt
+from scraper import get_kusrc_data
 
 load_dotenv()
 
 # ──────────────────────────────────────────
 # App & DB
 # ──────────────────────────────────────────
+app = Flask(__name__)
 # รองรับทั้ง PostgreSQL (Render) และ SQLite (local)
-_DB_URL = os.getenv("DATABASE_URL")
-
-if not _DB_URL:
-    # local fallback
-    _DB_URL = "sqlite:///science_assistant.db"
-else:
-    # 🔥 แปลงให้ใช้ psycopg
-    if _DB_URL.startswith("postgres://"):
-        _DB_URL = _DB_URL.replace("postgres://", "postgresql+psycopg://", 1)
-    elif _DB_URL.startswith("postgresql://"):
-        _DB_URL = _DB_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+_DB_URL = os.getenv("DATABASE_URL", "sqlite:///science_assistant.db")
+if _DB_URL.startswith("postgres://"):
+    _DB_URL = _DB_URL.replace("postgres://", "postgresql://", 1)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = _DB_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -41,20 +30,17 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
 }
-
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "sciKU-secret-2024")
-
 db = SQLAlchemy(app)
 
-# Admin credentials
+# Admin credentials (เปลี่ยนได้ใน .env)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "sci1234")
 
-# Gemini
-import google.generativeai as genai
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+
 # ──────────────────────────────────────────
 # DB Models
 # ──────────────────────────────────────────
@@ -599,6 +585,8 @@ def initialize_app():
 
 # gunicorn import module นี้โดยตรง ต้องเรียก initialize_app() ที่ระดับ module
 import os as _os
+if _os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+    initialize_app()
 
 if __name__ == "__main__":
     port = int(_os.environ.get("PORT", 5000))
